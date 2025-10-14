@@ -12,7 +12,6 @@ interface Props {
   perPage: number;
 }
 
-// Чітко типізуємо форму
 type FormValues = CreateNoteParams;
 
 const schema = Yup.object({
@@ -31,8 +30,7 @@ export default function NoteForm({ onCancel, page, search, perPage }: Props) {
     Error,
     CreateNoteParams
   >({
-    // v5: другий аргумент — MutationFunctionContext, беремо signal
-    mutationFn: (body, { signal }) => createNote(body, signal),
+    mutationFn: (body) => createNote(body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notes", page, search, perPage] });
     },
