@@ -6,40 +6,27 @@ import css from "./NoteList.module.css";
 
 export interface NoteListProps {
   notes: Note[];
-
-  page?: number;
-  q?: string;
+  page: number;
+  search: string;
+  perPage: number;
 }
 
-export default function NoteList({ notes, page, q }: NoteListProps) {
+export default function NoteList({
+  notes,
+  page,
+  search,
+  perPage,
+}: NoteListProps) {
   const qc = useQueryClient();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const { mutate } = useMutation<Note, Error, string>({
-    mutationFn: (id) => deleteNote({ id }),
-
+  const { mutate } = useMutation({
+    mutationFn: (id: string) => deleteNote({ id }),
     onMutate: async (id) => {
       setDeletingId(id);
-      const key = ["notes", page, q].filter(Boolean);
-      await qc.cancelQueries({ queryKey: key });
-
-      const prev = qc.getQueryData<Note[]>(key);
-      if (prev) {
-        qc.setQueryData<Note[]>(
-          key,
-          prev.filter((n) => n.id !== id)
-        );
-      }
-      return { key, prev };
     },
-
-    onError: (_err, _id, ctx) => {
-      if (ctx?.prev) qc.setQueryData(ctx.key!, ctx.prev);
-    },
-
     onSettled: () => {
-      const key = ["notes", page, q].filter(Boolean);
-      qc.invalidateQueries({ queryKey: key });
+      qc.invalidateQueries({ queryKey: ["notes", page, search, perPage] });
       setDeletingId(null);
     },
   });
@@ -48,13 +35,12 @@ export default function NoteList({ notes, page, q }: NoteListProps) {
     <ul className={css.list}>
       {notes.map((n) => (
         <li key={n.id} className={css.listItem}>
-          <h2 className={css.title}>{n.title}</h2>
+          <h2 className={css.title}> {n.title} </h2>
           <p className={css.content}>{n.content}</p>
           <div className={css.footer}>
-            {n.tag?.name && <span className={css.tag}>{n.tag.name}</span>}
+            {n.tag && <span className={css.tag}>{n.tag}</span>}
             <button
               className={css.button}
-              aria-label={`Delete note ${n.title}`}
               onClick={() => mutate(n.id)}
               disabled={deletingId === n.id}
             >

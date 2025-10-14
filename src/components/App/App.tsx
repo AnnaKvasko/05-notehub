@@ -1,57 +1,64 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchNotes } from "./services/noteService";
-import NoteList from "./components/NoteList/NoteList";
-import type { Note } from "./types/note";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useDebounce } from "use-debounce";
+import { fetchNotes } from "../../services/noteService";
+import type { PaginatedNotesResponse } from "../../services/noteService";
+import NoteList from "../../components/NoteList/NoteList";
+import SearchBox from "../../components/SearchBox/SearchBox";
+import Loader from "../../components/Loader/Loader";
+import QueryError from "../../components/QueryError/QueryError";
+import Pagination from "../../components/Pagination/Pagination";
 import css from "./App.module.css";
 
 export default function App() {
   const [page, setPage] = useState(1);
-  const [q, setQ] = useState("");
+  const [search, setSearch] = useState("");
+  const perPage = 12;
 
-  const { data, isLoading, isError, error } = useQuery<Note[]>({
-    queryKey: ["notes", page, q],
-    queryFn: async () => {
-      const res = await fetchNotes({ page, limit: 10, q });
-      return res.items;
-    },
-    keepPreviousData: true,
+  const [debouncedSearch] = useDebounce(search, 400);
+
+  const { data, isLoading, isError, error } = useQuery<PaginatedNotesResponse>({
+    queryKey: ["notes", page, debouncedSearch, perPage],
+    queryFn: ({ signal }) =>
+      fetchNotes({ page, perPage, search: debouncedSearch }, signal),
+    placeholderData: keepPreviousData,
   });
+
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const pages = Math.max(1, Math.ceil(total / (data?.perPage ?? perPage)));
 
   return (
     <div className={css.app}>
       <header className={css.toolbar}>
-        <input
-          placeholder="Search…"
-          value={q}
-          onChange={(e) => {
+        <SearchBox
+          className={css.input}
+          value={search}
+          onChange={(val) => {
             setPage(1);
-            setQ(e.target.value);
+            setSearch(val);
           }}
         />
 
-        <div>
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-          >
-            Prev
-          </button>
-          <span style={{ margin: "0 8px" }}>Page {page}</span>
-          <button onClick={() => setPage((p) => p + 1)}>Next</button>
-        </div>
+        {pages > 1 && (
+          <Pagination
+            pageCount={pages}
+            currentPage={page}
+            onPageChange={(p) => setPage(p)}
+          />
+        )}
 
-        <button>+ New note</button>
+        <button className={css.button}>Create note +</button>
       </header>
-
-      {isLoading && <p>Loading notes…</p>}
-      {isError && (
-        <p style={{ color: "crimson" }}>
-          {error instanceof Error ? error.message : "Failed to load notes"}
-        </p>
+      {isLoading && <Loader />} {isError && <QueryError error={error} />}
+      {items.length > 0 && (
+        <NoteList
+          notes={items}
+          page={page}
+          search={debouncedSearch}
+          perPage={perPage}
+        />
       )}
-
-      {data && data.length > 0 && <NoteList notes={data} page={page} q={q} />}
     </div>
   );
 }
