@@ -1,31 +1,31 @@
-import { Formik, Form, Field, ErrorMessage, type FormikHelpers } from "formik";
+import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNote, type CreateNoteParams } from "../../services/noteService";
 import type { Note } from "../../types/note";
 import css from "./NoteForm.module.css";
 
-interface Props {
-  onCancel: () => void;
-  page: number;
-  search: string;
-  perPage: number;
+export interface NoteFormProps {
+  onCancel: () => void; // єдиний обов’язковий проп
 }
 
 type FormValues = CreateNoteParams;
+
 const TAGS = ["Todo", "Work", "Personal", "Meeting", "Shopping"] as const;
 
 const schema = Yup.object({
-  title: Yup.string().min(3).max(50).required("Title is required"),
-  content: Yup.string().max(500).defined(),
+  title: Yup.string()
+    .min(3, "Min 3")
+    .max(50, "Max 50")
+    .required("Title is required"),
+  content: Yup.string().max(500, "Max 500").defined(), // узгоджено зі string (не undefined)
   tag: Yup.string()
-    .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"])
-    .defined(),
+    .oneOf([...TAGS], "Invalid tag")
+    .required("Tag is required"),
 });
 
-export default function NoteForm({ onCancel, page, search, perPage }: Props) {
+export default function NoteForm({ onCancel }: NoteFormProps) {
   const qc = useQueryClient();
-  const notesKey = ["notes", { page, search, perPage }] as const;
 
   const { mutate, isPending, error } = useMutation<
     Note,
@@ -34,7 +34,8 @@ export default function NoteForm({ onCancel, page, search, perPage }: Props) {
   >({
     mutationFn: (body) => createNote(body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: notesKey });
+      // інвалідуємо весь список нотаток незалежно від поточних фільтрів/сторінки
+      qc.invalidateQueries({ queryKey: ["notes"], exact: false });
     },
   });
 
@@ -44,7 +45,9 @@ export default function NoteForm({ onCancel, page, search, perPage }: Props) {
     <Formik<FormValues>
       initialValues={initialValues}
       validationSchema={schema}
-      onSubmit={(values, helpers: FormikHelpers<FormValues>) => {
+      validateOnBlur
+      validateOnChange
+      onSubmit={(values, helpers) => {
         mutate(values, {
           onSuccess: () => {
             helpers.resetForm();
@@ -53,8 +56,6 @@ export default function NoteForm({ onCancel, page, search, perPage }: Props) {
           onSettled: () => helpers.setSubmitting(false),
         });
       }}
-      validateOnBlur
-      validateOnChange
     >
       {({ isSubmitting }) => (
         <Form className={css.form}>
@@ -94,7 +95,7 @@ export default function NoteForm({ onCancel, page, search, perPage }: Props) {
 
           {error && (
             <p className={css.error}>
-              {error instanceof Error ? error.message : "Failed to create note"}
+              {(error as Error).message ?? "Failed to create note"}
             </p>
           )}
 

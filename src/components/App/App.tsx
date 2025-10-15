@@ -1,3 +1,4 @@
+// src/components/App/App.tsx
 import { useEffect, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
@@ -19,7 +20,7 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 400);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const perPage = 10;
+  const perPage = 12;
 
   const queryKey = ["notes", page, debouncedSearch, perPage] as const;
 
@@ -31,15 +32,9 @@ export default function App() {
       placeholderData: keepPreviousData,
     });
 
-  const items = Array.isArray(data?.items) ? data!.items : [];
-  const effectivePerPage = Number.isFinite(data?.perPage)
-    ? Number(data!.perPage)
-    : perPage;
-  const effectiveTotal = Number.isFinite(data?.total) ? Number(data!.total) : 0;
-  const pages = Math.max(
-    1,
-    Math.ceil((effectiveTotal || 0) / (effectivePerPage || 1))
-  );
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const pages = Math.max(1, Math.ceil(total / (data?.perPage ?? perPage)));
 
   useEffect(() => {
     if (page > pages && pages > 0) setPage(1);
@@ -48,6 +43,7 @@ export default function App() {
   return (
     <div className={css.app}>
       <header className={css.toolbar}>
+        {/* Пагінація зверху */}
         {pages > 1 && (
           <Pagination
             pageCount={pages}
@@ -111,12 +107,7 @@ export default function App() {
 
       <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <h2 style={{ marginTop: 0 }}>Create note</h2>
-        <NoteForm
-          page={page}
-          search={debouncedSearch}
-          perPage={perPage}
-          onCancel={() => setIsModalOpen(false)}
-        />
+        <NoteForm onCancel={() => setIsModalOpen(false)} />
       </Modal>
     </div>
   );

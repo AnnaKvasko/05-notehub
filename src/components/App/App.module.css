@@ -13,6 +13,9 @@
   padding: 16px 0;
   background-color: #f8f9fa;
   border-bottom: 1px solid #dee2e6;
+
+  gap: 12px; /* + */
+  flex-wrap: wrap; /* + */
 }
 
 .button {
@@ -28,4 +31,8 @@
 
 .button:hover {
   background-color: #0b5ed7;
+}
+.topPagination,
+.bottomPagination {
+  margin: 8px 0; /* невеликий відступ для пагінації */
 }
