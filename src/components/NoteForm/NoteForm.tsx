@@ -13,17 +13,19 @@ interface Props {
 }
 
 type FormValues = CreateNoteParams;
+const TAGS = ["Todo", "Work", "Personal", "Meeting", "Shopping"] as const;
 
 const schema = Yup.object({
   title: Yup.string().min(3).max(50).required("Title is required"),
-  content: Yup.string().max(500),
-  tag: Yup.mixed<"Todo" | "Work" | "Personal" | "Meeting" | "Shopping">()
+  content: Yup.string().max(500).defined(),
+  tag: Yup.string()
     .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"])
-    .required("Tag is required"),
+    .defined(),
 });
 
 export default function NoteForm({ onCancel, page, search, perPage }: Props) {
   const qc = useQueryClient();
+  const notesKey = ["notes", { page, search, perPage }] as const;
 
   const { mutate, isPending, error } = useMutation<
     Note,
@@ -32,7 +34,7 @@ export default function NoteForm({ onCancel, page, search, perPage }: Props) {
   >({
     mutationFn: (body) => createNote(body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notes", page, search, perPage] });
+      qc.invalidateQueries({ queryKey: notesKey });
     },
   });
 
@@ -81,11 +83,11 @@ export default function NoteForm({ onCancel, page, search, perPage }: Props) {
           <div className={css.formGroup}>
             <label htmlFor="tag">Tag</label>
             <Field as="select" id="tag" name="tag" className={css.select}>
-              <option value="Todo">Todo</option>
-              <option value="Work">Work</option>
-              <option value="Personal">Personal</option>
-              <option value="Meeting">Meeting</option>
-              <option value="Shopping">Shopping</option>
+              {TAGS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
             </Field>
             <ErrorMessage name="tag" component="span" className={css.error} />
           </div>

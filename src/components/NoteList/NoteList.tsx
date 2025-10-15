@@ -20,13 +20,40 @@ export default function NoteList({
   const qc = useQueryClient();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const listKey = ["notes", page, search, perPage] as const;
+
   const { mutate } = useMutation({
     mutationFn: (id: string) => deleteNote({ id }),
+
     onMutate: async (id) => {
       setDeletingId(id);
+      await qc.cancelQueries({ queryKey: listKey });
+
+      const prevPageData = qc.getQueryData<{
+        items: Note[];
+        total: number;
+        page: number;
+        perPage: number;
+      }>(listKey);
+
+      if (prevPageData) {
+        const nextItems = prevPageData.items.filter((n) => n.id !== id);
+        qc.setQueryData(listKey, {
+          ...prevPageData,
+          items: nextItems,
+        });
+      }
+
+      return { prevPageData };
     },
+
+    onError: (_err, _id, ctx) => {
+      if (ctx?.prevPageData) qc.setQueryData(listKey, ctx.prevPageData);
+      setDeletingId(null);
+    },
+
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["notes", page, search, perPage] });
+      qc.invalidateQueries({ queryKey: ["notes"], exact: false });
       setDeletingId(null);
     },
   });
@@ -35,11 +62,12 @@ export default function NoteList({
     <ul className={css.list}>
       {notes.map((n) => (
         <li key={n.id} className={css.listItem}>
-          <h2 className={css.title}> {n.title} </h2>
+          <h2 className={css.title}>{n.title}</h2>
           <p className={css.content}>{n.content}</p>
           <div className={css.footer}>
             {n.tag && <span className={css.tag}>{n.tag}</span>}
             <button
+              type="button"
               className={css.button}
               onClick={() => mutate(n.id)}
               disabled={deletingId === n.id}

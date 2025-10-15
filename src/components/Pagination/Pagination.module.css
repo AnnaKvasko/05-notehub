@@ -2,10 +2,9 @@
   display: flex;
   justify-content: center;
   gap: 4px;
-  margin: 16px 0;
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 16px 0;
 }
 
 .pagination li {
@@ -44,4 +43,13 @@
 .active a {
   color: #fff !important;
   font-weight: 500;
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
