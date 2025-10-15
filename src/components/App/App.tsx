@@ -1,4 +1,3 @@
-// src/components/App/App.tsx
 import { useEffect, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
@@ -42,8 +41,7 @@ export default function App() {
 
   return (
     <div className={css.app}>
-      <header className={css.toolbar}>
-        {/* Пагінація зверху */}
+      {/* <header className={css.toolbar}>
         {pages > 1 && (
           <Pagination
             pageCount={pages}
@@ -69,6 +67,40 @@ export default function App() {
         >
           Create note +
         </button>
+      </header> */}
+
+      <header className={css.toolbar}>
+        <div className={css.left}>
+          <SearchBox
+            className={css.input}
+            value={search}
+            onChange={(val) => {
+              setPage(1);
+              setSearch(val);
+            }}
+          />
+        </div>
+
+        <div className={css.center}>
+          {pages > 1 && (
+            <Pagination
+              pageCount={pages}
+              currentPage={page}
+              onPageChange={(p) => setPage(p)}
+              className={css.topPagination}
+            />
+          )}
+        </div>
+
+        <div className={css.right}>
+          <button
+            type="button"
+            className={css.button}
+            onClick={() => setIsModalOpen(true)}
+          >
+            Create note +
+          </button>
+        </div>
       </header>
 
       {isLoading && <Loader />}

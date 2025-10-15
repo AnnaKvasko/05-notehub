@@ -11,6 +11,8 @@ export default function SearchBox({
 }: SearchBoxProps) {
   return (
     <input
+      id="search"
+      name="search"
       className={className}
       type="text"
       placeholder="Search notes"

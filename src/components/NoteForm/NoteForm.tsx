@@ -6,7 +6,7 @@ import type { Note } from "../../types/note";
 import css from "./NoteForm.module.css";
 
 export interface NoteFormProps {
-  onCancel: () => void; // єдиний обов’язковий проп
+  onCancel: () => void;
 }
 
 type FormValues = CreateNoteParams;
@@ -18,7 +18,7 @@ const schema = Yup.object({
     .min(3, "Min 3")
     .max(50, "Max 50")
     .required("Title is required"),
-  content: Yup.string().max(500, "Max 500").defined(), // узгоджено зі string (не undefined)
+  content: Yup.string().max(500, "Max 500").defined(),
   tag: Yup.string()
     .oneOf([...TAGS], "Invalid tag")
     .required("Tag is required"),
@@ -34,7 +34,6 @@ export default function NoteForm({ onCancel }: NoteFormProps) {
   >({
     mutationFn: (body) => createNote(body),
     onSuccess: () => {
-      // інвалідуємо весь список нотаток незалежно від поточних фільтрів/сторінки
       qc.invalidateQueries({ queryKey: ["notes"], exact: false });
     },
   });
