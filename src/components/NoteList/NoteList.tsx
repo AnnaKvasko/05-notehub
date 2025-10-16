@@ -41,6 +41,7 @@ export default function NoteList({
         qc.setQueryData(listKey, {
           ...prevPageData,
           items: nextItems,
+          total: Math.max(0, prevPageData.total - 1),
         });
       }
 
@@ -65,7 +66,8 @@ export default function NoteList({
           <h2 className={css.title}>{n.title}</h2>
           <p className={css.content}>{n.content}</p>
           <div className={css.footer}>
-            {n.tag && <span className={css.tag}>{n.tag}</span>}
+            <span className={css.tag}>{n.tag ?? "—"}</span>
+
             <button
               type="button"
               className={css.button}

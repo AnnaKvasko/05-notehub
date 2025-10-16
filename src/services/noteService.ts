@@ -24,11 +24,9 @@ export interface FetchNotesParams {
   search?: string;
 }
 
-export interface PaginatedNotesResponse {
-  items: Note[];
-  total: number;
-  page: number;
-  perPage: number;
+export interface NotesListResponse {
+  notes: Note[];
+  totalPages: number;
 }
 
 export interface CreateNoteParams {
@@ -41,31 +39,16 @@ export interface DeleteNoteParams {
   id: string;
 }
 
-interface ApiNotesListResponse {
-  notes: Note[];
-  totalPages: number;
-}
-
 export async function fetchNotes(
   { page, perPage, search }: FetchNotesParams,
   signal?: AbortSignal
-): Promise<PaginatedNotesResponse> {
+): Promise<NotesListResponse> {
   const params: Record<string, string | number> = { page, perPage };
   if (search && search.trim()) params.search = search.trim();
 
-  const res: AxiosResponse<ApiNotesListResponse> =
-    await api.get<ApiNotesListResponse>("/notes", { params, signal });
-
-  const { notes, totalPages } = res.data;
-
-  const mapped: PaginatedNotesResponse = {
-    items: notes,
-    total: totalPages * perPage,
-    page,
-    perPage,
-  };
-
-  return mapped;
+  const res: AxiosResponse<NotesListResponse> =
+    await api.get<NotesListResponse>("/notes", { params, signal });
+  return res.data;
 }
 
 export async function createNote(

@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
-import {
-  fetchNotes,
-  type PaginatedNotesResponse,
-} from "../../services/noteService";
+import { fetchNotes, type NotesListResponse } from "../../services/noteService";
 import NoteList from "../../components/NoteList/NoteList";
 import SearchBox from "../../components/SearchBox/SearchBox";
 import Loader from "../../components/Loader/Loader";
@@ -24,16 +21,15 @@ export default function App() {
   const queryKey = ["notes", page, debouncedSearch, perPage] as const;
 
   const { data, isLoading, isError, error, isFetching } =
-    useQuery<PaginatedNotesResponse>({
+    useQuery<NotesListResponse>({
       queryKey,
       queryFn: ({ signal }) =>
         fetchNotes({ page, perPage, search: debouncedSearch }, signal),
       placeholderData: keepPreviousData,
     });
 
-  const items = data?.items ?? [];
-  const total = data?.total ?? 0;
-  const pages = Math.max(1, Math.ceil(total / (data?.perPage ?? perPage)));
+  const items = data?.notes ?? [];
+  const pages = Math.max(1, data?.totalPages ?? 1);
 
   useEffect(() => {
     if (page > pages && pages > 0) setPage(1);
@@ -41,34 +37,6 @@ export default function App() {
 
   return (
     <div className={css.app}>
-      {/* <header className={css.toolbar}>
-        {pages > 1 && (
-          <Pagination
-            pageCount={pages}
-            currentPage={page}
-            onPageChange={(p) => setPage(p)}
-            className={css.topPagination}
-          />
-        )}
-
-        <SearchBox
-          className={css.input}
-          value={search}
-          onChange={(val) => {
-            setPage(1);
-            setSearch(val);
-          }}
-        />
-
-        <button
-          type="button"
-          className={css.button}
-          onClick={() => setIsModalOpen(true)}
-        >
-          Create note +
-        </button>
-      </header> */}
-
       <header className={css.toolbar}>
         <div className={css.left}>
           <SearchBox
