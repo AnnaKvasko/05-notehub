@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Note } from "../../types/note";
+import type { NotesListResponse } from "../../services/noteService";
 import { deleteNote } from "../../services/noteService";
-import { useState } from "react";
 import css from "./NoteList.module.css";
 
 export interface NoteListProps {
@@ -29,34 +30,43 @@ export default function NoteList({
       setDeletingId(id);
       await qc.cancelQueries({ queryKey: listKey });
 
-      const prevPageData = qc.getQueryData<{
-        items: Note[];
-        total: number;
-        page: number;
-        perPage: number;
-      }>(listKey);
+      const prevData = qc.getQueryData<NotesListResponse>(listKey);
 
-      if (prevPageData) {
-        const nextItems = prevPageData.items.filter((n) => n.id !== id);
-        qc.setQueryData(listKey, {
-          ...prevPageData,
-          items: nextItems,
-          total: Math.max(0, prevPageData.total - 1),
+      if (prevData) {
+        const nextNotes = prevData.notes.filter((n) => n.id !== id);
+
+        const approxTotalBefore = prevData.totalPages * perPage;
+        const approxTotalAfter = Math.max(0, approxTotalBefore - 1);
+        const nextTotalPages = Math.max(
+          1,
+          Math.ceil(approxTotalAfter / perPage)
+        );
+
+        qc.setQueryData<NotesListResponse>(listKey, {
+          ...prevData,
+          notes: nextNotes,
+          totalPages: nextTotalPages,
         });
       }
 
-      return { prevPageData };
+      return { prevData };
     },
 
     onError: (_err, _id, ctx) => {
-      if (ctx?.prevPageData) qc.setQueryData(listKey, ctx.prevPageData);
+      if (ctx?.prevData) {
+        qc.setQueryData<NotesListResponse>(listKey, ctx.prevData);
+      }
       setDeletingId(null);
     },
 
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["notes"], exact: false });
-      setDeletingId(null);
+    onSuccess: () => {
+      qc.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) && q.queryKey[0] === "notes",
+      });
     },
+
+    onSettled: () => setDeletingId(null),
   });
 
   return (
@@ -65,6 +75,7 @@ export default function NoteList({
         <li key={n.id} className={css.listItem}>
           <h2 className={css.title}>{n.title}</h2>
           <p className={css.content}>{n.content}</p>
+
           <div className={css.footer}>
             <span className={css.tag}>{n.tag ?? "—"}</span>
 
@@ -73,6 +84,7 @@ export default function NoteList({
               className={css.button}
               onClick={() => mutate(n.id)}
               disabled={deletingId === n.id}
+              aria-busy={deletingId === n.id}
             >
               {deletingId === n.id ? "Deleting…" : "Delete"}
             </button>
